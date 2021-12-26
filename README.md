@@ -3,10 +3,10 @@
 封装、继承、多态的基本内容：
 * `extends`: table---------继承至父类
 * `public`: table----------公有访问属性
-* `protected`: table------保护访问属性
+* `protected`: table-------保护访问属性
 * `private`: table---------私有访问属性
 * `base`: table------------返回父类的 public 和 protected 成员
-* `new`: function-----------返回本类的一个实例
+* `new`: function----------返回本类的一个实例
 
 ### 一些注意事项
 1. 在所有语句块中，`new` 出来的实例对象都应该被声明为 `local` 变量；
