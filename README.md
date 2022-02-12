@@ -7,6 +7,7 @@
 * `private`: table---------私有访问属性
 * `base`: table------------返回父类的 public 和 protected 成员
 * `new`: function----------返回本类的一个实例
+* `ctor`: function---------默认存在一个无逻辑的构造函数
 
 ### 一些注意事项
 1. 在所有语句块中，`new` 出来的实例对象都应该被声明为 `local` 变量；
