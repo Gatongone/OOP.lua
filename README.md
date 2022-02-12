@@ -22,14 +22,17 @@
 ```lua
 GrandParent = class
 {
+    ctor = function ()
+        print("this is GrandParent")
+    end,
     private = 
     {
         name = "GrandParent"
     },
     public =
     {
+        data = 1,
         Func = function ()
-            print("this is GrandParent")
             print(name)
         end
     }
@@ -37,6 +40,10 @@ GrandParent = class
 Parent = class
 {
     extends = GrandParent,
+    ctor = function ()
+        data = data + 1
+        print("this is Parent")
+    end,
     private = 
     {
         name = "Parent"
@@ -44,7 +51,6 @@ Parent = class
     public =
     {
         Func = function ()
-            print("this is Parent")
             base:Func()
             print(name)
         end
@@ -53,6 +59,10 @@ Parent = class
 Child = class
 {
     extends = Parent,
+    ctor = function ()
+        data = data + 1
+        print("this is Child")
+    end,
     private = 
     {
         name = "Child"
@@ -60,23 +70,23 @@ Child = class
     public =
     {
         Func = function ()
-            print("this is Child")
             base:Func()
             print(name)
         end
     }
 }
-
-child = Child:new()
+local child = Child:new()
 child:Func()
+print(child.data)
 ```
 ## OutPut
 
 ```
-this is Child
-this is Parent
 this is GrandParent
+this is Parent
+this is Child
 GrandParent
 Parent
 Child
+3
 ```
