@@ -347,6 +347,5 @@ function class(...)
             end
         end
     })
-
     return classTable
 end
