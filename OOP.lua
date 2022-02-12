@@ -143,13 +143,10 @@ function class(...)
                 end
             end
             })
-            
+
         local ctor = getmetatable(self)["__members"]["ctor"]
-        setfenv(ctor,instance)
-        ctor(...)
-        if classData["extends"] then
-            getmetatable(self)["__env"]["base"]["ctor"](...)
-        end
+        setfenv(classData["ctor"],instance)
+        ctor(getfenv(ctor),...)
 
         local result = instance
         return result
@@ -196,9 +193,25 @@ function class(...)
             table.blend(outTable["private"], privateTable)
         end
         if ctor then
-            outTable["ctor"] = ctor
+            outTable["ctor"] = function (env,...)
+                local extens = classData["extends"]
+                if extens then
+                    local constructor = extens["ctor"]
+                    if constructor then
+                        constructor(...)
+                    end
+                end
+                classData["ctor"](...)
+            end
         else
-            outTable["ctor"] = function ()
+            outTable["ctor"] = function (env,...)
+                local extens = classData["extends"]
+                if extens then
+                    local constructor = extens["ctor"]
+                    if constructor then
+                        constructor(...)
+                    end
+                end
             end
         end
     end
