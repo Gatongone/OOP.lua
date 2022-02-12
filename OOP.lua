@@ -77,12 +77,13 @@ end
 
 ---### Lua 面向对象编程
 ---封装、继承、多态的基本内容：
---- * `extends`: table---------继承至父类
---- * `public`: table----------公有访问属性
---- * `protected`: table------保护访问属性
---- * `private`: table---------私有访问属性
---- * `base`: table------------返回父类的 public 和 protected 成员
---- * `new`: function-----------返回本类的一个实例
+--- * `extends`: table------------继承至父类
+--- * `public`: table-------------公有访问属性
+--- * `protected`: table---------保护访问属性
+--- * `private`: table------------私有访问属性
+--- * `base`: table----------------返回父类的 public 和 protected 成员
+--- * `new`: function--------------返回本类的一个实例
+--- * `ctor`: function------------构造函数，默认存在一个没有任何逻辑的构造函数
 --- ---
 --- ### 一些注意事项
 --- 1. 在所有语句块中，`new` 出来的实例对象都应该被声明为 `local` 变量；
@@ -100,7 +101,7 @@ function class(...)
     local classTable = {}
 
     --设置new方法
-    function classTable:new()
+    function classTable:new(...)
         local instance = {}
         setmetatable(instance,{
             __index = function(_, key)
@@ -109,10 +110,15 @@ function class(...)
                 if data then
                     if _G["type"](data) == "function" then
                         local blendEnv = {}
-                        setmetatable(blendEnv, {__index = getfenv(data)})
                         for key, value in pairs(instance) do
                             blendEnv[key] = value
                         end
+                        setmetatable(blendEnv, {
+                            __index = getfenv(data),
+                            __newindex = function (_, key, value)
+                                instance[key] = value
+                            end
+                        })
                         setfenv(data, blendEnv)
                     end
                 else
@@ -120,7 +126,6 @@ function class(...)
                 end
                 return data
             end,
-            --TODO 实现赋值时判断类型和是否修改了xxx
             __newindex = function (table,key,value)
             local members = membersTable["public"]
                 if members then
@@ -138,7 +143,16 @@ function class(...)
                 end
             end
             })
-        return instance
+            
+        local ctor = getmetatable(self)["__members"]["ctor"]
+        setfenv(ctor,instance)
+        ctor(...)
+        if classData["extends"] then
+            getmetatable(self)["__env"]["base"]["ctor"](...)
+        end
+
+        local result = instance
+        return result
     end
 
     --构建class,继承父类，拷贝父类所有 public 和 protected 成员
@@ -161,7 +175,7 @@ function class(...)
         local publicTable = inTable["public"]
         local protectedTable = inTable["protected"]
         local privateTable = inTable["private"]
-
+        local ctor = inTable["ctor"]
         --拷贝自身成员
         if publicTable then
             if outTable["public"] == nil then
@@ -180,6 +194,12 @@ function class(...)
                 outTable["private"] = {}
             end
             table.blend(outTable["private"], privateTable)
+        end
+        if ctor then
+            outTable["ctor"] = ctor
+        else
+            outTable["ctor"] = function ()
+            end
         end
     end
 
@@ -209,7 +229,7 @@ function class(...)
     local memberEnv = {}
     setmetatable(memberEnv, {__index = _G})
     CopyMembers(memberEnv)
-    
+
     --设置base
     if classData["extends"] then
         local baseEnv =  {}
@@ -223,7 +243,11 @@ function class(...)
         if parentMember["protected"] then
             table.blend(baseEnv,parentMember["protected"])
         end
-        
+
+        baseEnv["ctor"] = parentMember["ctor"]
+        setfenv(baseEnv["ctor"],getfenv(parentMember["ctor"]))
+        setmetatable(baseEnv,{__index = _G})
+
         setmetatable(memberEnv["base"],{
             __index = function (_,key)
                 local data = baseEnv[key]
@@ -252,6 +276,9 @@ function class(...)
         __members = membersTable,
         --Get时只从 public 中获得
         __index = function(table, key)
+            if key == "ctor" then
+                return membersTable["ctor"]
+            end
             local members = membersTable["public"]
             if members then
                 local data = members[key]
@@ -280,7 +307,11 @@ function class(...)
                     end
                     return data
                 else
-                    error('尝试获取未定义或无法访问的成员变量："' .. key .. '"！',2)
+                    if _G[key] then
+                        return _G[key]
+                    else
+                        error('尝试获取未定义或无法访问的成员变量："' .. key .. '"！',2)
+                    end
                     return nil
                 end
             end
